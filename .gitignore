@@ -1,0 +1,13 @@
+# Dependencies
+backend/node_modules/
+
+# Environment secrets — NEVER commit this file
+.env
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+*.swp

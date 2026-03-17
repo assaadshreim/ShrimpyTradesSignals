@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🦐 Shrimpy Signals</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%23FFD700' stroke='%23B8860B' stroke-width='3'/%3E%3Ccircle cx='50' cy='50' r='37' fill='%23FFC200' stroke='%23B8860B' stroke-width='2'/%3E%3Ctext x='50' y='66' font-family='Georgia,serif' font-size='42' font-weight='bold' text-anchor='middle' fill='%23996B00'%3E%24%3C/text%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --gold:   #FFD700;
+            --shrimp: #FF7F50;
+            --green:  #00C853;
+            --red:    #F44336;
+            --blue:   #2196F3;
+            --bg:     #0A0A0A;
+            --panel:  #111111;
+            --border: #1E1E1E;
+            --input:  #0D0D0D;
+            --text:   #E0E0E0;
+            --muted:  #555555;
+        }
+
+        body {
+            background: var(--bg);
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ── Auth Gate ─────────────────────────────────── */
+        #auth-gate {
+            position: fixed; inset: 0; z-index: 100;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--bg);
+        }
+        .auth-card {
+            background: var(--panel);
+            border: 1px solid var(--gold);
+            border-radius: 1rem;
+            padding: 2.5rem 2rem;
+            width: 100%; max-width: 360px;
+            margin: 1rem;
+            text-align: center;
+            animation: borderPulse 3s ease-in-out infinite;
+        }
+        @keyframes borderPulse {
+            0%,100% { border-color: var(--gold);   box-shadow: 0 0 25px rgba(255,215,0,0.25); }
+            50%      { border-color: var(--shrimp); box-shadow: 0 0 35px rgba(255,127,80,0.25); }
+        }
+
+        /* ── General Form Elements ─────────────────────── */
+        .inp {
+            background: var(--input);
+            border: 1px solid #252525;
+            color: var(--text);
+            border-radius: 0.5rem;
+            padding: 0.7rem 1rem;
+            width: 100%;
+            font-family: inherit;
+            font-size: 0.875rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .inp:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(255,215,0,0.1);
+        }
+        .inp::placeholder { color: #393939; }
+        .inp.asset   { color: var(--gold); font-weight: 700; font-size: 1rem; letter-spacing: 0.12em; }
+        .inp.sl-inp  { border-color: rgba(244,67,54,0.3); }
+        .inp.tp-inp  { border-color: rgba(0,200,83,0.2); }
+        .inp.error   { border-color: #FF5252 !important; box-shadow: 0 0 0 3px rgba(255,82,82,0.15) !important; }
+        textarea.inp { resize: vertical; min-height: 72px; line-height: 1.5; }
+
+        /* ── Labels ────────────────────────────────────── */
+        .label {
+            display: block;
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            color: var(--muted);
+            margin-bottom: 0.4rem;
+        }
+
+        /* ── Buttons ────────────────────────────────────── */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--gold) 0%, #FF9F1C 50%, var(--shrimp) 100%);
+            color: #000;
+            font-weight: 800;
+            font-size: 0.9rem;
+            letter-spacing: 0.12em;
+            border: none;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            cursor: pointer;
+            width: 100%;
+            font-family: inherit;
+            transition: transform 0.25s, box-shadow 0.25s;
+        }
+        .btn-primary:hover    { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(255,215,0,0.35); }
+        .btn-primary:active   { transform: translateY(0); }
+        .btn-primary:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .quick-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+        .quick-btn {
+            border: 1px solid #2b2b2b;
+            background: #121212;
+            color: #c9c9c9;
+            border-radius: 0.6rem;
+            font-size: 0.62rem;
+            font-weight: 800;
+            letter-spacing: 0.07em;
+            padding: 0.75rem 0.5rem;
+            cursor: pointer;
+            font-family: inherit;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+        }
+        .quick-btn:hover { transform: translateY(-1px); }
+        .quick-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+        .quick-btn.close { border-color: rgba(255,82,82,0.35); color: #FF6B6B; }
+        .quick-btn.close:hover { box-shadow: 0 8px 20px rgba(255,82,82,0.22); }
+        .quick-btn.buy { border-color: rgba(0,200,83,0.35); color: #00E676; }
+        .quick-btn.buy:hover { box-shadow: 0 8px 20px rgba(0,200,83,0.22); }
+        .quick-btn.sell { border-color: rgba(255,127,80,0.4); color: #FF9B78; }
+        .quick-btn.sell:hover { box-shadow: 0 8px 20px rgba(255,127,80,0.22); }
+
+        /* ── Trade-Type Toggle Buttons ──────────────────── */
+        .type-btn {
+            background: var(--input);
+            border: 1px solid #252525;
+            color: #555;
+            border-radius: 0.5rem;
+            padding: 0.6rem 0.35rem;
+            font-size: 0.62rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+            white-space: nowrap;
+            text-align: center;
+        }
+        .type-group-label {
+            display: block;
+            font-size: 0.54rem;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            color: #333;
+            margin: 0.65rem 0 0.3rem;
+        }
+        .type-btn.buy-mkt-on   { border-color: #00C853; background: rgba(0,200,83,0.12);   color: #00E676; box-shadow: 0 0 14px rgba(0,200,83,0.25); }
+        .type-btn.sell-mkt-on  { border-color: #F44336; background: rgba(244,67,54,0.12);  color: #FF5252; box-shadow: 0 0 14px rgba(244,67,54,0.25); }
+        .type-btn.buy-lim-on   { border-color: #2196F3; background: rgba(33,150,243,0.12); color: #42A5F5; box-shadow: 0 0 14px rgba(33,150,243,0.25); }
+        .type-btn.sell-lim-on  { border-color: #FF9800; background: rgba(255,152,0,0.12);  color: #FFB74D; box-shadow: 0 0 14px rgba(255,152,0,0.25); }
+        .type-btn.buy-stop-on  { border-color: #FFD700; background: rgba(255,215,0,0.12);  color: #FFD700; box-shadow: 0 0 14px rgba(255,215,0,0.25); }
+        .type-btn.sell-stop-on { border-color: #F44336; background: rgba(244,67,54,0.12);  color: #FF5252; box-shadow: 0 0 14px rgba(244,67,54,0.25); }
+        .type-btn.buy-sl-on    { border-color: #00BCD4; background: rgba(0,188,212,0.12);  color: #26C6DA; box-shadow: 0 0 14px rgba(0,188,212,0.25); }
+        .type-btn.sell-sl-on   { border-color: #FF7F50; background: rgba(255,127,80,0.12); color: #FF8C66; box-shadow: 0 0 14px rgba(255,127,80,0.25); }
+
+        /* ── Panel ──────────────────────────────────────── */
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+        }
+        .panel-title {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            color: var(--muted);
+            padding-bottom: 1rem;
+            margin-bottom: 1.25rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        /* ── Header ─────────────────────────────────────── */
+        header {
+            position: sticky; top: 0; z-index: 10;
+            background: rgba(10,10,10,0.93);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 1.5rem;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .hdr-logo { display: flex; align-items: center; gap: 0.75rem; }
+        .hdr-title { font-size: 1.1rem; font-weight: 800; color: var(--gold); letter-spacing: 0.08em; line-height: 1.2; }
+        .hdr-sub   { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; }
+        .live-badge { display: flex; align-items: center; gap: 0.4rem; }
+        .live-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #00E676;
+            animation: livePulse 2s ease-in-out infinite;
+        }
+        @keyframes livePulse {
+            0%,100% { opacity: 1; transform: scale(1); }
+            50%      { opacity: 0.4; transform: scale(0.75); }
+        }
+
+        /* ── Layout ─────────────────────────────────────── */
+        #main-app { display: none; min-height: 100vh; }
+        main {
+            max-width: 940px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+        @media (min-width: 768px) {
+            main { grid-template-columns: 1fr 1fr; }
+        }
+
+        /* ── Grid helpers ───────────────────────────────── */
+        .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+        .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; }
+
+        /* ── Telegram preview bubble ────────────────────── */
+        .tg-bubble    { background: #1A2332; border-radius: 0.75rem; overflow: hidden; }
+        .tg-hdr       { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-bottom: 1px solid #263550; }
+        .tg-avatar    { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--gold), var(--shrimp)); display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+        .tg-name      { font-size: 0.8rem; font-weight: 700; color: var(--gold); }
+        .tg-handle    { font-size: 0.62rem; color: #4A90D9; }
+        .tg-msg       { padding: 1rem; font-family: monospace; font-size: 0.8rem; line-height: 1.8; color: var(--text); white-space: pre-line; min-height: 220px; }
+        .tg-ts        { padding: 0.25rem 1rem 0.65rem; text-align: right; font-size: 0.62rem; color: #3A5070; }
+
+        /* ── Status & Error Alerts ──────────────────────── */
+        .status-box {
+            display: none;
+            border-radius: 0.5rem;
+            padding: 0.7rem 1rem;
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-align: center;
+            margin-top: 0.75rem;
+        }
+        .status-box.sending { background: rgba(255,215,0,0.07); color: var(--gold);   border: 1px solid rgba(255,215,0,0.2); }
+        .status-box.ok      { background: rgba(0,200,83,0.07);  color: #00E676;       border: 1px solid rgba(0,200,83,0.2); }
+        .status-box.fail    { background: rgba(244,67,54,0.07); color: #FF5252;       border: 1px solid rgba(244,67,54,0.2); }
+
+        /* ── Toast ──────────────────────────────────────── */
+        #toast {
+            position: fixed; bottom: 2rem; left: 50%;
+            transform: translateX(-50%) translateY(120px);
+            transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+            z-index: 9999;
+            padding: 0.7rem 1.5rem;
+            border-radius: 0.75rem;
+            font-family: inherit;
+            font-size: 0.82rem;
+            font-weight: 700;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+        #toast.show { transform: translateX(-50%) translateY(0); }
+
+        /* ── Auth error ─────────────────────────────────── */
+        #auth-error { color: #FF5252; font-size: 0.75rem; margin-bottom: 0.75rem; display: none; }
+
+        /* ── Spacers ─────────────────────────────────────── */
+        .mb1   { margin-bottom: 0.75rem; }
+        .mb15  { margin-bottom: 1.25rem; }
+    </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════
+     AUTH GATE
+═══════════════════════════════════════════════════════ -->
+<div id="auth-gate">
+    <div class="auth-card">
+        <div style="font-size:3.5rem;margin-bottom:1rem;">🦐</div>
+        <div style="font-size:1.4rem;font-weight:800;color:var(--gold);letter-spacing:0.1em;margin-bottom:0.25rem;">SHRIMPY SIGNALS</div>
+        <div style="font-size:0.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:2rem;">Trading Signal Portal · Authorized Access Only</div>
+
+        <span class="label">Admin Key</span>
+        <input
+            type="password"
+            id="admin-key-input"
+            class="inp mb1"
+            placeholder="Enter your admin key…"
+            onkeydown="if(event.key==='Enter') unlockApp()"
+        />
+        <div id="auth-error">❌ Invalid admin key. Access denied.</div>
+        <button class="btn-primary" onclick="unlockApp()" style="font-size:0.82rem;padding:0.875rem;">
+            UNLOCK ACCESS 🔓
+        </button>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     MAIN APP
+═══════════════════════════════════════════════════════ -->
+<div id="main-app">
+
+    <!-- Header -->
+    <header>
+        <div class="hdr-logo">
+            <span style="font-size:2rem;">🦐</span>
+            <div>
+                <div class="hdr-title">SHRIMPY SIGNALS</div>
+                <div class="hdr-sub">Trading Signal Broadcaster</div>
+            </div>
+        </div>
+        <div class="live-badge">
+            <div class="live-dot"></div>
+            <span style="font-size:0.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;">Live</span>
+        </div>
+    </header>
+
+    <!-- Content grid -->
+    <main>
+
+        <!-- ── LEFT: Signal Builder ─────────────────────── -->
+        <div class="panel">
+            <div class="panel-title">⚡ Signal Builder</div>
+
+            <!-- Asset -->
+            <div class="mb15">
+                <span class="label">Asset</span>
+                <input type="text" id="asset" class="inp asset" value="XAUUSD" oninput="updatePreview()" />
+            </div>
+
+            <!-- Trade Type -->
+            <div class="mb15">
+                <span class="label">Order Type &mdash; MT5</span>
+
+                <span class="type-group-label">▸ Market Order</span>
+                <div class="g2" style="margin-bottom:0.15rem;">
+                    <button class="type-btn buy-mkt-on" id="btn-buy-mkt"
+                        onclick="setType('BUY','🟢','buy-mkt')">🟢&nbsp; BUY</button>
+                    <button class="type-btn" id="btn-sell-mkt"
+                        onclick="setType('SELL','🔴','sell-mkt')">🔴&nbsp; SELL</button>
+                </div>
+
+                <span class="type-group-label">▸ Limit Orders</span>
+                <div class="g2" style="margin-bottom:0.15rem;">
+                    <button class="type-btn" id="btn-buy-lim"
+                        onclick="setType('BUY LIMIT','🔵','buy-lim')">🔵&nbsp; BUY LIMIT</button>
+                    <button class="type-btn" id="btn-sell-lim"
+                        onclick="setType('SELL LIMIT','🟠','sell-lim')">🟠&nbsp; SELL LIMIT</button>
+                </div>
+
+                <span class="type-group-label">▸ Stop Orders</span>
+                <div class="g2" style="margin-bottom:0.15rem;">
+                    <button class="type-btn" id="btn-buy-stop"
+                        onclick="setType('BUY STOP','🟡','buy-stop')">🟡&nbsp; BUY STOP</button>
+                    <button class="type-btn" id="btn-sell-stop"
+                        onclick="setType('SELL STOP','🔴','sell-stop')">🔴&nbsp; SELL STOP</button>
+                </div>
+
+                <span class="type-group-label">▸ Stop Limit Orders</span>
+                <div class="g2">
+                    <button class="type-btn" id="btn-buy-sl"
+                        onclick="setType('BUY STOP LIMIT','🔷','buy-sl')">🔷&nbsp; BUY STOP LMT</button>
+                    <button class="type-btn" id="btn-sell-sl"
+                        onclick="setType('SELL STOP LIMIT','🔶','sell-sl')">🔶&nbsp; SELL STOP LMT</button>
+                </div>
+            </div>
+
+            <!-- Entry + SL -->
+            <div class="g2 mb1">
+                <div>
+                    <span class="label">Entry Price</span>
+                    <input type="text" id="entry" class="inp" placeholder="e.g. 3215.00" oninput="numericOnly(this)" />
+                </div>
+                <div>
+                    <span class="label">Stop Loss</span>
+                    <input type="text" id="sl" class="inp sl-inp" placeholder="e.g. 3190.00" oninput="numericOnly(this)" />
+                </div>
+            </div>
+
+            <!-- TP -->
+            <div class="mb15" style="margin-top:0.75rem;">
+                <span class="label">Take Profit 🎯</span>
+                <input type="text" id="tp" class="inp tp-inp" placeholder="e.g. 3230.00" oninput="numericOnly(this)" />
+            </div>
+
+            <!-- Note -->
+            <div class="mb15">
+                <span class="label">📝 Note <span style="color:#333;text-transform:none;letter-spacing:0;">(optional — appears in signal)</span></span>
+                <textarea id="note" class="inp" placeholder="e.g. Wait for 1H candle close above resistance before entering…" oninput="updatePreview()"></textarea>
+            </div>
+
+            <!-- Ship button -->
+            <button class="btn-primary" id="ship-btn" onclick="shipSignal()">🚀 SHIP SIGNAL</button>
+
+            <!-- Urgent triggers -->
+            <div class="quick-grid">
+                <button class="quick-btn close" onclick="sendUrgentAction('close')">⛔ CLOSE TRADE</button>
+                <button class="quick-btn buy" onclick="sendUrgentAction('buy-now')">🟢 BUY NOW</button>
+                <button class="quick-btn sell" onclick="sendUrgentAction('sell-now')">🔴 SELL NOW</button>
+            </div>
+
+            <!-- Status feedback -->
+            <div id="status-box" class="status-box"></div>
+        </div>
+
+        <!-- ── RIGHT: Telegram Preview ──────────────────── -->
+        <div class="panel">
+            <div class="panel-title">📱 Telegram Preview</div>
+
+            <div class="tg-bubble">
+                <div class="tg-hdr">
+                    <div class="tg-avatar">🦐</div>
+                    <div>
+                        <div class="tg-name">Shrimpy Signals Bot</div>
+                        <div class="tg-handle">Premium Signal Desk</div>
+                    </div>
+                </div>
+                <div id="preview-text" class="tg-msg"></div>
+                <div class="tg-ts">just now ✓✓</div>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;margin-top:0.75rem;font-size:0.62rem;color:#3A3A3A;">
+                <span>Channel: <span style="color:var(--gold);">Configured via .env</span></span>
+                <span id="char-count">0 chars</span>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- ═══════════════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════════════ -->
+<script>
+    'use strict';
+
+    // ── State ──────────────────────────────────────────────
+    let tradeType = { label: 'BUY', emoji: '🟢', key: 'buy-mkt' };
+    let adminKey  = '';
+
+    // ── Auth ───────────────────────────────────────────────
+    function unlockApp() {
+        const key = document.getElementById('admin-key-input').value.trim();
+        if (!key) { showToast('⚠️ Please enter the admin key', 'warn'); return; }
+        adminKey = key;
+        document.getElementById('auth-gate').style.display = 'none';
+        document.getElementById('main-app').style.display  = 'block';
+        document.getElementById('auth-error').style.display = 'none';
+        updatePreview();
+    }
+
+    // ── Numeric-only input guard ───────────────────────────
+    function numericOnly(el) {
+        // Strip everything except digits and decimal point
+        let v = el.value.replace(/[^\d.]/g, '');
+        // Collapse multiple dots — keep only the first
+        const dot = v.indexOf('.');
+        if (dot !== -1) v = v.slice(0, dot + 1) + v.slice(dot + 1).replace(/\./g, '');
+        if (el.value !== v) el.value = v;
+        // Visual error state if the field has content but is still non-numeric
+        if (el.value !== '' && !/^\d*\.?\d*$/.test(el.value)) {
+            el.classList.add('error');
+        } else {
+            el.classList.remove('error');
+        }
+        updatePreview();
+    }
+
+    // ── Trade-type toggle ──────────────────────────────────
+    const ALL_TYPE_KEYS = ['buy-mkt','sell-mkt','buy-lim','sell-lim','buy-stop','sell-stop','buy-sl','sell-sl'];
+
+    function setType(label, emoji, key) {
+        tradeType = { label, emoji, key };
+        ALL_TYPE_KEYS.forEach(k => {
+            document.getElementById('btn-' + k).className = 'type-btn';
+        });
+        document.getElementById('btn-' + key).className = 'type-btn ' + key + '-on';
+        updatePreview();
+    }
+
+    // ── Message builder (mirrors backend logic exactly) ────
+    function buildMessage(asset, entry, sl, tp, note) {
+        const pair = (asset || 'XAUUSD').trim();
+        const entryVal = entry || '—';
+        const lines = [
+            '📣 ' + pair + ' SIGNAL • ' + tradeType.label,
+            'Action: ' + tradeType.emoji + ' ' + tradeType.label,
+            'Entry: ' + entryVal,
+            'SL: ' + (sl || '—') + ' • TP: ' + (tp || '—')
+        ];
+        if (note && note.trim()) {
+            lines.push('');
+            lines.push('Note: ' + note.trim());
+        }
+        return lines.join('\n');
+    }
+
+    // ── Live preview ───────────────────────────────────────
+    function updatePreview() {
+        const msg = buildMessage(
+            document.getElementById('asset')?.value,
+            document.getElementById('entry')?.value,
+            document.getElementById('sl')?.value,
+            document.getElementById('tp')?.value,
+            document.getElementById('note')?.value
+        );
+        const el = document.getElementById('preview-text');
+        if (el) {
+            el.textContent = msg;
+            document.getElementById('char-count').textContent = msg.length + ' chars';
+        }
+    }
+
+    function setUrgentButtonsDisabled(disabled) {
+        document.querySelectorAll('.quick-btn').forEach((btn) => {
+            btn.disabled = disabled;
+        });
+    }
+
+    async function sendUrgentAction(action) {
+        const asset = document.getElementById('asset').value.trim() || 'XAUUSD';
+        const note  = document.getElementById('note').value.trim();
+        const status = document.getElementById('status-box');
+
+        const labels = {
+            'close': 'CLOSE TRADE',
+            'buy-now': 'BUY NOW',
+            'sell-now': 'SELL NOW'
+        };
+
+        status.className = 'status-box sending';
+        status.style.display = 'block';
+        status.textContent = '🚨 Sending urgent ' + (labels[action] || 'action') + ' alert...';
+        setUrgentButtonsDisabled(true);
+
+        try {
+            const res = await fetch('/api/send-urgent', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-admin-key': adminKey
+                },
+                body: JSON.stringify({ asset, action, note })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                status.className = 'status-box ok';
+                status.textContent = '✅ Urgent alert sent: ' + (labels[action] || action);
+                showToast('🚨 Urgent alert sent', 'success');
+            } else if (res.status === 401) {
+                status.className = 'status-box fail';
+                status.textContent = '🔒 Invalid admin key — access denied.';
+                showToast('🔒 Authorization failed', 'error');
+            } else {
+                status.className = 'status-box fail';
+                status.textContent = '❌ ' + (data.error || 'Failed to send urgent alert');
+                showToast('❌ Urgent alert failed', 'error');
+            }
+        } catch (err) {
+            status.className = 'status-box fail';
+            status.textContent = '❌ Network error — is the server running?';
+            showToast('❌ Cannot reach server', 'error');
+        } finally {
+            setUrgentButtonsDisabled(false);
+        }
+    }
+
+    // ── Ship Signal ────────────────────────────────────────
+    async function shipSignal() {
+        const asset = document.getElementById('asset').value.trim();
+        const entry = document.getElementById('entry').value.trim();
+        const sl    = document.getElementById('sl').value.trim();
+        const tp    = document.getElementById('tp').value.trim();
+        const note  = document.getElementById('note').value.trim();
+
+        if (!entry || !sl || !tp) {
+            showToast('⚠️ Fill in Entry, SL, and TP', 'warn');
+            return;
+        }
+        // Guard: numeric fields must only contain digits and dot
+        const numericRe = /^\d*\.?\d+$/;
+        const badFields = [['Entry', entry], ['SL', sl], ['TP', tp]].filter(([, v]) => v && !numericRe.test(v));
+        if (badFields.length) {
+            showToast('⚠️ ' + badFields.map(([n]) => n).join(', ') + ' must be numbers only', 'warn');
+            return;
+        }
+
+        const btn    = document.getElementById('ship-btn');
+        const status = document.getElementById('status-box');
+
+        btn.disabled    = true;
+        btn.textContent = '⏳ Transmitting…';
+
+        status.className   = 'status-box sending';
+        status.style.display = 'block';
+        status.textContent = '📡 Sending to Telegram…';
+
+        try {
+            const res = await fetch('/api/send-signal', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-admin-key': adminKey
+                },
+                body: JSON.stringify({
+                    asset,
+                    tradeType: tradeType.label,
+                    typeEmoji: tradeType.emoji,
+                    entry, sl, tp, note
+                })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                status.className   = 'status-box ok';
+                status.textContent = '✅ Signal shipped to Telegram!';
+                showToast('🚀 Signal sent successfully!', 'success');
+
+            } else if (res.status === 401) {
+                status.className   = 'status-box fail';
+                status.textContent = '🔒 Invalid admin key — access denied.';
+                showToast('🔒 Authorization failed', 'error');
+                setTimeout(() => {
+                    document.getElementById('main-app').style.display  = 'none';
+                    document.getElementById('auth-gate').style.display = 'flex';
+                    document.getElementById('auth-error').style.display = 'block';
+                }, 1600);
+
+            } else {
+                status.className   = 'status-box fail';
+                status.textContent = '❌ ' + (data.error || 'Failed to send signal');
+                showToast('❌ Send failed', 'error');
+            }
+        } catch (err) {
+            status.className   = 'status-box fail';
+            status.textContent = '❌ Network error — is the server running?';
+            showToast('❌ Cannot reach server', 'error');
+        } finally {
+            btn.disabled    = false;
+            btn.textContent = '🚀 SHIP SIGNAL';
+        }
+    }
+
+    // ── Toast ──────────────────────────────────────────────
+    function showToast(msg, type) {
+        const toast = document.getElementById('toast');
+        const styles = {
+            success: { bg: 'rgba(0,200,83,0.92)',   color: '#000' },
+            error:   { bg: 'rgba(244,67,54,0.92)',  color: '#fff' },
+            warn:    { bg: 'rgba(255,152,0,0.92)',   color: '#000' }
+        };
+        const s = styles[type] || styles.warn;
+        toast.style.background = s.bg;
+        toast.style.color      = s.color;
+        toast.textContent      = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3500);
+    }
+
+    // ── Init ───────────────────────────────────────────────
+    updatePreview();
+</script>
+</body>
+</html>
