@@ -1,0 +1,18 @@
+[build]
+  publish = "frontend"
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/api/send-signal"
+  to = "/.netlify/functions/send-signal"
+  status = 200
+
+[[redirects]]
+  from = "/api/send-urgent"
+  to = "/.netlify/functions/send-urgent"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
